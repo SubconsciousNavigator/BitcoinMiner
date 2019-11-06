@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">BitcoinMiner</string>
-    <string name="action_settings">Settings</string>
+    <string name="connect_settings">Connect</string>
+    <string name="mine">Mine</string>
+    <string name="btc_0_0">BTC 0.0</string>
+    <string name="error_message">Try again later</string>
+    <string name="connected_to_server">Connected! Click again to start mining!</string>
 </resources>
