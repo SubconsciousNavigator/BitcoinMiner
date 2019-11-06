@@ -26,7 +26,7 @@ class BitcoinMineViewModel(application: Application) : AndroidViewModel(applicat
      */
     fun addClient(): Boolean {
         Volley.newRequestQueue(getApplication()).add(JsonObjectRequest(
-            Request.Method.POST, BACKEND_URL + "client/addClient?clientId=" + ANDROID_ID, null,
+            Request.Method.POST, BACKEND_URL + "client/addClient?clientId=$ANDROID_ID" , null,
             Response.Listener<JSONObject> {
                 isLoggedIn = true
             }, Response.ErrorListener { isLoggedIn = false })
@@ -39,9 +39,9 @@ class BitcoinMineViewModel(application: Application) : AndroidViewModel(applicat
      */
     fun login(): Boolean {
         if (!isLoggedIn) {
-            Volley.newRequestQueue(getApplication()).add(JsonObjectRequest(
-                Request.Method.POST, BACKEND_URL + "client/login?clientId=" + ANDROID_ID, null,
-                Response.Listener<JSONObject> {
+            Volley.newRequestQueue(getApplication()).add(StringRequest(
+                BACKEND_URL + "client/login?clientId=$ANDROID_ID",
+                Response.Listener<String> {
                     isLoggedIn = true
                 }, Response.ErrorListener { isLoggedIn = false })
             )
