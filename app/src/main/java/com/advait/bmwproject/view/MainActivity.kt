@@ -4,7 +4,9 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Toast
+import androidx.annotation.Nullable
+import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 
 import kotlinx.android.synthetic.main.activity_main.*
@@ -12,6 +14,7 @@ import kotlinx.android.synthetic.main.content_main.*
 
 import com.advait.bmwproject.R
 import com.advait.bmwproject.R.layout.*
+import com.advait.bmwproject.databinding.ActivityMainBinding
 import com.advait.bmwproject.viewmodel.BitcoinMineViewModel
 
 class MainActivity : AppCompatActivity() {
@@ -20,7 +23,15 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(activity_main)
         setSupportActionBar(toolbar)
-        bitcoinMineViewModel = ViewModelProviders.of(this).get(BitcoinMineViewModel::class.java)
+        bitcoinMineViewModel =
+            ViewModelProviders.of(this).get(BitcoinMineViewModel::class.java)
+        val binding: ActivityMainBinding =
+            DataBindingUtil.setContentView(this, activity_main)
+        binding.data = bitcoinMineViewModel
+        binding.setLifecycleOwner(this)
+        bitcoinMineViewModel.getBitCoinCount().observe(this, Observer(){
+            textView.text = "BTC $it"
+        })
         button.setOnClickListener {
             if (bitcoinMineViewModel.login()) {
                 mineSomeBitcoins()

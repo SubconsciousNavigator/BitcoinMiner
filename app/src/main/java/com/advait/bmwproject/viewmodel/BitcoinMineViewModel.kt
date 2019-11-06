@@ -3,24 +3,27 @@ package com.advait.bmwproject.viewmodel
 import android.app.Application
 import android.provider.Settings.Secure.ANDROID_ID
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.MutableLiveData
 import com.android.volley.Request
 import com.android.volley.Response
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import org.json.JSONObject
-import java.math.BigDecimal
+
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 
 class BitcoinMineViewModel(application: Application) : AndroidViewModel(application) {
     private lateinit var inputHashData: String
-    private lateinit var bitcoin: BigDecimal
+    private var bitcoin:MutableLiveData<Int> = MutableLiveData()
     private var isLoggedIn = false
 
     private val BACKEND_URL = "https://bitcoin-backend.herokuapp.com/"
-
+    /**
+     * future-use for registering new client for authentication purpose
+     */
     fun addClient(): Boolean {
         Volley.newRequestQueue(getApplication()).add(JsonObjectRequest(
             Request.Method.POST, BACKEND_URL + "client/addClient?clientId=" + ANDROID_ID, null,
@@ -31,8 +34,11 @@ class BitcoinMineViewModel(application: Application) : AndroidViewModel(applicat
         return isLoggedIn
     }
 
+    /**
+     * logging the client in the server
+     */
     fun login(): Boolean {
-        if(!isLoggedIn) {
+        if (!isLoggedIn) {
             Volley.newRequestQueue(getApplication()).add(JsonObjectRequest(
                 Request.Method.POST, BACKEND_URL + "client/login?clientId=" + ANDROID_ID, null,
                 Response.Listener<JSONObject> {
@@ -45,16 +51,18 @@ class BitcoinMineViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-
+    /**
+     * fetching the input for computing hash
+     */
     fun fetchWork(): Boolean {
         var status = false
         Volley.newRequestQueue(getApplication()).add(StringRequest(BACKEND_URL + "work",
             Response.Listener<String> { response ->
                 val responseJson = JSONObject(response)
                 val hashMessage: JSONObject? = responseJson.optJSONObject("blockHeader")
-                inputHashData =
-                    hashMessage?.run { optString("prevBlockHash") } +
-                            hashMessage?.run { optString("nonce") }
+                inputHashData = hashMessage?.run { optString("merkleRoot") } +
+                        hashMessage?.run { optString("prevBlockHash") } +
+                        hashMessage?.run { optString("nonce") }
                 status = true
             }, Response.ErrorListener { status = false })
         )
@@ -62,34 +70,47 @@ class BitcoinMineViewModel(application: Application) : AndroidViewModel(applicat
         return status
     }
 
+    /**
+     * method to submit calculated hash to cloud
+     */
     private fun sendCalculatedHashToCloud(hashOutput: String) {
-        //connect to cloud
+        Volley.newRequestQueue(getApplication()).add(
+            JsonObjectRequest(
+                Request.Method.POST,
+                BACKEND_URL + "submit?hash=" + hashOutput + "&clientId=" + ANDROID_ID,
+                null,
+                Response.Listener<JSONObject> {
+                    bitcoin.value = bitcoin.value?.plus(1)
+                },
+                Response.ErrorListener { })
+        )
     }
 
+    /**
+     * method to calculate hash
+     */
     private fun calculateHash(inputString: String): String {
         return toHexString(getSHA(inputString))
     }
 
+    /**
+     * method to computer hash from input string to byte array
+     */
     @UseExperimental(ExperimentalStdlibApi::class)
     @Throws(NoSuchAlgorithmException::class)
     fun getSHA(input: String): ByteArray {
-        // Static getInstance method is called with hashing SHA
         val md = MessageDigest.getInstance("SHA-256")
-
-        // digest() method called
-        // to calculate message digest of an input
-        // and return array of byte
         return md.digest(input.encodeToByteArray())
     }
 
+    /**
+     * method to convert byte array to hex string.
+     */
     fun toHexString(hash: ByteArray): String {
-        // Convert byte array into signum representation
         val number = BigInteger(1, hash)
 
-        // Convert message digest into hex value
         val hexString = StringBuilder(number.toString(16))
 
-        // Pad with leading zeros
         while (hexString.length < 32) {
             hexString.insert(0, '0')
         }
@@ -106,7 +127,11 @@ class BitcoinMineViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    fun isInputHashDataAvailable():Boolean {
+    fun isInputHashDataAvailable(): Boolean {
         return inputHashData.isNotEmpty()
+    }
+
+    public fun getBitCoinCount():MutableLiveData<Int> {
+        return bitcoin
     }
 }
